@@ -20,7 +20,7 @@ class App extends Component {
                 callback(videoSubs)
             }
         })
-    }
+    };
 
     subConnection = (swarm, videoSubs, callback) => {
         swarm.on('connect', function (peer, id) {
@@ -29,14 +29,16 @@ class App extends Component {
                 callback(videoSubs)
             }
         });
-    }
+    };
 
     addConnectionToState = (videoSubs) => {
         this.setState({videoSubs})
-    }
+    };
 
     componentDidMount() {
-        const hub = signalhub('my-game', [
+        const location = window.location.pathname;
+        // const hub = signalhub('my-game', [
+        const hub = signalhub(location, [
             'https://signalhub-jccqtwhdwc.now.sh'
         ]);
 
@@ -62,9 +64,17 @@ class App extends Component {
 
         return (
             <div className="App">
-                <video ref={this.videoRef} autoPlay></video>
-                hey
-                {videoSubList}
+
+                <div className="app__sublist">
+                    {videoSubList}
+
+                </div>
+
+                <div className="app__selfvid">
+
+                    <video className="app__videostream__self" ref={this.videoRef} autoPlay></video>
+                </div>
+
             </div>
         );
     }
@@ -78,13 +88,13 @@ class VideoSub extends Component {
     }
 
     componentDidMount() {
-        debugger;
         this.subRef.current.srcObject = this.props.stream;
     }
 
     render() {
         return (
-            <video ref={this.subRef} autoPlay></video>
+
+            <video className="app__videostream" ref={this.subRef} autoPlay></video>
         )
     }
 }
