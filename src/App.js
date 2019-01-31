@@ -1,28 +1,92 @@
-import React, { Component } from 'react';
-import logo from './logo.svg';
+import React, {Component} from 'react';
+import signalhub from 'signalhub';
+import createSwarm from 'webrtc-swarm';
 import './App.css';
 
 class App extends Component {
-  render() {
-    return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-        </header>
-      </div>
-    );
-  }
+
+    constructor() {
+        super();
+        this.state = {
+            videoSubs: {},
+        };
+        this.videoRef = React.createRef()
+    }
+
+    subDisconnect = (swarm, videoSubs, callback) => {
+        swarm.on('disconnect', function (peer, id) {
+            if (videoSubs[id]) {
+                delete videoSubs[id]
+                callback(videoSubs)
+            }
+        })
+    }
+
+    subConnection = (swarm, videoSubs, callback) => {
+        swarm.on('connect', function (peer, id) {
+            if (!videoSubs[id]) {
+                videoSubs[id] = {stream: peer.stream}
+                callback(videoSubs)
+            }
+        });
+    }
+
+    addConnectionToState = (videoSubs) => {
+        this.setState({videoSubs})
+    }
+
+    componentDidMount() {
+        const hub = signalhub('my-game', [
+            'https://signalhub-jccqtwhdwc.now.sh'
+        ]);
+
+        navigator.mediaDevices.getUserMedia({video: true, audio: true}).then((stream) => {
+            this.videoRef.current.srcObject = stream
+            const swarm = createSwarm(hub, {
+                stream: stream
+            });
+
+            let {videoSubs} = this.state;
+            this.subConnection(swarm, videoSubs, (newSubState) => this.addConnectionToState(newSubState));
+            this.subDisconnect(swarm, videoSubs, (newSubState) => this.addConnectionToState(newSubState));
+
+        });
+    }
+
+    render() {
+
+        const videoSubList = Object.keys(this.state.videoSubs).map((id) => {
+            const data = this.state.videoSubs[id];
+            return <VideoSub {...data}/>
+        });
+
+        return (
+            <div className="App">
+                <video ref={this.videoRef} autoPlay></video>
+                hey
+                {videoSubList}
+            </div>
+        );
+    }
+}
+
+
+class VideoSub extends Component {
+    constructor(props) {
+        super(props)
+        this.subRef = React.createRef()
+    }
+
+    componentDidMount() {
+        debugger;
+        this.subRef.current.srcObject = this.props.stream;
+    }
+
+    render() {
+        return (
+            <video ref={this.subRef} autoPlay></video>
+        )
+    }
 }
 
 export default App;
